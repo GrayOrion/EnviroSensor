@@ -11,7 +11,8 @@
 #include <Adafruit_Sensor.h> // abstract functions for sensors
 #include <Adafruit_BME280.h> // specific code to access the BME280
 
-
+// MQTT
+#include <PubSubClient.h>
 
 // From WifiManager
 #include <Arduino.h>
@@ -38,6 +39,15 @@ const long interval = 10000;  // interval to wait for Wi-Fi connection (millisec
 // Set LED GPIO
 const int ledPin = LED_BUILTIN;
 
+// MQTT server (Broker) address ( TODO: currently hardcoded, to be fixed)
+const char* mqtt_server = "192.168.1.30";
+// Other MQTT stuff - TODO: ugly, to be fixed 
+WiFiClient espClient;
+PubSubClient client(espClient);
+unsigned long lastMsg = 0;
+#define MSG_BUFFER_SIZE  (50)
+char msg[MSG_BUFFER_SIZE];
+int counterValue = 0; //TODO: ?!?! Fix this uglyness
 
 
 // OLED Screen Constants
@@ -116,6 +126,12 @@ void setup()
 
   // initialize wifi connection, or get connection values if fails
   connectWifi();
+
+  // Initialize random number generator for MQTT id
+  randomSeed(micros());
+
+  client.setServer(mqtt_server, 1883);
+  client.setCallback(callback);
 }
 
 
@@ -132,6 +148,24 @@ void loop()
 
   // wait a second before doing it all again
   delay(1000);
+
+  // MQTT portion TODO: refactor
+  if (!client.connected()) 
+  {
+    reconnect();
+  }
+  client.loop();
+
+  unsigned long now = millis();
+  if (now - lastMsg > 2000) 
+  {
+    lastMsg = now;
+    ++counterValue;
+    snprintf (msg, MSG_BUFFER_SIZE, "hello world #%ld", counterValue);
+    Serial.print("Publish message: ");
+    Serial.println(msg);
+    client.publish("outTopic", msg);
+  }
 }
 
 
@@ -457,4 +491,52 @@ String processor(const String& var)
     return ledState;
   }
   return String();
+}
+
+
+////////////////////////////////  MQTT Stuff  /////////////////////////////////////
+
+
+void callback(char* topic, byte* payload, unsigned int length) {
+  Serial.print("Message arrived [");
+  Serial.print(topic);
+  Serial.print("] ");
+  for (int i = 0; i < length; i++) {
+    Serial.print((char)payload[i]);
+  }
+  Serial.println();
+
+  // Switch on the LED if an 1 was received as first character
+  if ((char)payload[0] == '1') {
+    //digitalWrite(BUILTIN_LED, LOW);   // Turn the LED on (Note that LOW is the voltage level
+    // but actually the LED is on; this is because
+    // it is active low on the ESP-01)
+  } else {
+    //digitalWrite(BUILTIN_LED, HIGH);  // Turn the LED off by making the voltage HIGH
+  }
+
+}
+
+void reconnect() {
+  // Loop until we're reconnected
+  //while (!client.connected()) {
+    Serial.print("Attempting MQTT connection...");
+    // Create a random client ID
+    String clientId = "ESP32Client-";
+    clientId += String(random(0xffff), HEX);
+    // Attempt to connect
+    if (client.connect(clientId.c_str())) {
+      Serial.println("connected");
+      // Once connected, publish an announcement...
+      client.publish("outTopic", "hello world");
+      // ... and resubscribe
+      client.subscribe("inTopic");
+    } else {
+      Serial.print("failed, rc=");
+      Serial.print(client.state());
+      Serial.println(" try again in 5 seconds");
+      // Wait 5 seconds before retrying
+      delay(5000);
+    }
+ // }
 }
