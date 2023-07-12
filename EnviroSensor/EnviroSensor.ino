@@ -3,6 +3,23 @@
  * Target platform is the Heltec ESP32 LoRa v2
 */
 
+/*********
+  Combined and adapted from:
+
+  Rui Santos
+  Complete project details at https://RandomNerdTutorials.com/esp32-esp8266-input-data-html-form/
+  Rui Santos
+  Complete instructions at https://RandomNerdTutorials.com/esp32-wi-fi-manager-asyncwebserver/
+
+  Permission is hereby granted, free of charge, to any person obtaining a copy
+  of this software and associated documentation files.
+  
+  The above copyright notice and this permission notice shall be included in all
+  copies or substantial portions of the Software.
+*********/
+
+
+
 // Bring in pre-created pieces code that does a bunch of work for us (libraries)
 #include <Wire.h> // i2c
 #include <Adafruit_GFX.h> // generic (abstract) drawing functions
