@@ -332,7 +332,7 @@ void publishTemperature()
     dtostrf(temperature, 1, 2, tempString);
     Serial.print("Temperature: ");
     Serial.println(tempString);
-    //client.publish("esp32/temperature", tempString);
+    client.publish("esp32/temperature", tempString);
 
     humidity = bme.readHumidity();
     
