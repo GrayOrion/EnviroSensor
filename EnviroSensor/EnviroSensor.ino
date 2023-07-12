@@ -19,7 +19,8 @@
 *********/
 
 
-
+// Please note all the libraries needed
+// TODO: list library sources here for people to include
 // Bring in pre-created pieces code that does a bunch of work for us (libraries)
 #include <Wire.h> // i2c
 #include <Adafruit_GFX.h> // generic (abstract) drawing functions
