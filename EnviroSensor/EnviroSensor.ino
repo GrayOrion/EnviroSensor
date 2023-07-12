@@ -11,15 +11,15 @@
 #include <Adafruit_Sensor.h> // abstract functions for sensors
 #include <Adafruit_BME280.h> // specific code to access the BME280
 
-// MQTT
-#include <PubSubClient.h>
-
 // From WifiManager
 #include <Arduino.h>
 #include <WiFi.h>
 #include <ESPAsyncWebServer.h>
 #include <AsyncTCP.h>
 #include "SPIFFS.h"
+
+// MQTT
+#include <PubSubClient.h>
 
 // Search for parameter in HTTP POST request
 const char* PARAM_INPUT_1 = "ssid";
@@ -40,13 +40,12 @@ const long interval = 10000;  // interval to wait for Wi-Fi connection (millisec
 const int ledPin = LED_BUILTIN;
 
 // MQTT server (Broker) address ( TODO: currently hardcoded, to be fixed)
-const char* mqtt_server = "192.168.1.30";
+const char* mqtt_server = "10.0.0.153";
 // Other MQTT stuff - TODO: ugly, to be fixed 
 WiFiClient espClient;
 PubSubClient client(espClient);
-unsigned long lastMsg = 0;
+unsigned long lastMsg = 0; //TODO: ?!?! Fix this uglyness
 #define MSG_BUFFER_SIZE  (50)
-char msg[MSG_BUFFER_SIZE];
 int counterValue = 0; //TODO: ?!?! Fix this uglyness
 
 
@@ -137,17 +136,8 @@ void setup()
 
 void loop() 
 {
-  // put your main code here, to run repeatedly:
-  
-  //display.
-  // Output a message to the programmers computer so we know the code is running
-  // Serial.println("run...");
-
   // get and display the current temperature and humidity
-  tempAndHumidityReading();
-
-  // wait a second before doing it all again
-  delay(1000);
+  displayTempAndHumidityReading();
 
   // MQTT portion TODO: refactor
   if (!client.connected()) 
@@ -156,77 +146,21 @@ void loop()
   }
   client.loop();
 
-  unsigned long now = millis();
-  if (now - lastMsg > 2000) 
-  {
-    lastMsg = now;
-    ++counterValue;
-    snprintf (msg, MSG_BUFFER_SIZE, "hello world #%ld", counterValue);
-    Serial.print("Publish message: ");
-    Serial.println(msg);
-    client.publish("outTopic", msg);
-  }
+  publishTemperature();
+
+  // wait 5 seconds before doing it all again
+  delay(5000);
 }
 
 
-void setupScreen()
-{
-  // Turn on the screen
-  // On the Heltec ESP32 LoRa v2 the power for the display can be turned off.
-  pinMode(VEXT,OUTPUT);
-	digitalWrite(VEXT, LOW);
-  // and give a slight delay for it to initialize
-  delay(100);
+/////////////// Do interesting stuff functions //////////////
 
-  // start communications with the screen
-  SCREENI2C.begin(SCREEN_I2C_SDA, SCREEN_I2C_SCL, 100000);
-  // SSD1306_SWITCHCAPVCC = generate display voltage from 3.3V internally
-  if (!display.begin(SSD1306_SWITCHCAPVCC, SCREEN_ADDRESS)) 
-  {
-    Serial.println(F("SSD1306 allocation failed"));
-    for (;;)
-      ;  // Don't proceed, loop forever
-  }
 
-  // Show initial display buffer contents on the screen --
-  // the library initializes this with an Adafruit splash screen.
-  display.clearDisplay();
-  display.display();
-  display.setTextSize(1);
-  display.setTextColor(WHITE);
-}
 
-void setupSensor()
-{
-  // setup hardware pins for use to communicate to the sensor
-  pinMode(SENSOR_I2C_SCL, OUTPUT);
-  digitalWrite(SENSOR_I2C_SCL, HIGH);
-  pinMode(SENSOR_I2C_SDA, OUTPUT);
-  digitalWrite(SENSOR_I2C_SDA, HIGH);
-
-  // initialize the sensor
-  Serial.println("Starting BME280...");
-  display.println("Starting BME280...");
-  display.display();
-  SENSORI2C.begin(SENSOR_I2C_SDA, SENSOR_I2C_SCL, 400000);
-  bool status = bme.begin(0x76, &SENSORI2C);  
-
-  // Check that we can communicate with the sensor.
-  // If we can't, output a message and go no further.
-  // This kind of error handling is important.
-  // Can you find a similar example elsewhere in the code?
-  if (!status) 
-  {
-    Serial.println("Could not find a valid BME280 sensor, check wiring!");
-    display.println("No BME- check wiring!");
-    display.display();
-    while (1); // same as "while (true)" - i.e. do nothing more, forever
-  }
-}
 
 
 // and here is the code for the tempAndHumidityReading function
-void tempAndHumidityReading()
+void displayTempAndHumidityReading()
 {
   display.clearDisplay();
   // display temperature
@@ -259,126 +193,6 @@ void tempAndHumidityReading()
 }
 
 
-////////////////// SPIFFS File System ////////////////////////////
-
-// Initialize SPIFFS
-void initSPIFFS() 
-{
-  if (!SPIFFS.begin(true)) 
-  {
-    Serial.println("An error has occurred while mounting SPIFFS");
-  }
-  Serial.println("SPIFFS mounted successfully");
-}
-
-// Read File from SPIFFS
-String readFile(fs::FS &fs, const char * path)
-{
-  Serial.printf("Reading file: %s\r\n", path);
-
-  File file = fs.open(path);
-  if(!file || file.isDirectory())
-  {
-    Serial.println("- failed to open file for reading");
-    return String();
-  }
-  
-  String fileContent;
-  while(file.available())
-  {
-    fileContent = file.readStringUntil('\n');
-    break;     
-  }
-  return fileContent;
-}
-
-// Write file to SPIFFS
-void writeFile(fs::FS &fs, const char * path, const char * message)
-{
-  Serial.printf("Writing file: %s\r\n", path);
-
-  File file = fs.open(path, FILE_WRITE);
-  if(!file)
-  {
-    Serial.println("- failed to open file for writing");
-    return;
-  }
-  if(file.print(message))
-  {
-    Serial.println("- file written");
-  } 
-  else 
-  {
-    Serial.println("- write failed");
-  }
-}
-
-
-//////////////////// WIFI ////////////////////
-
-void connectWifi()
-{
-  // Load values saved in SPIFFS
-  ssid = readFile(SPIFFS, ssidPath);
-  pass = readFile(SPIFFS, passPath);
-  ip = readFile(SPIFFS, ipPath);
-  gateway = readFile (SPIFFS, gatewayPath);
-  Serial.println(ssid);
-  Serial.println(pass);
-  Serial.println(ip);
-  Serial.println(gateway);
-
-  if (initWiFi())
-  {
-    // wifi works fine, now serve web server:
-    serveLedChangerPage();
-  }
-  else
-  {
-    // wifi does not work, create a web page to ask for wifi login:
-    serveNetworkCredentialForm();
-  }
-    
-}
-
-// Initialize WiFi
-bool initWiFi() 
-{
-  if(ssid=="" || ip=="")
-  {
-    Serial.println("Undefined SSID or IP address.");
-    return false;
-  }
-
-  WiFi.mode(WIFI_STA);
-  localIP.fromString(ip.c_str());
-  localGateway.fromString(gateway.c_str());
-
-  if (!WiFi.config(localIP, localGateway, subnet))
-  {
-    Serial.println("STA Failed to configure");
-    return false;
-  }
-  
-  WiFi.begin(ssid.c_str(), pass.c_str());
-  Serial.println("Connecting to WiFi...");
-
-  unsigned long currentMillis = millis();
-  previousMillis = currentMillis;
-
-  while(WiFi.status() != WL_CONNECTED) 
-  {
-    currentMillis = millis();
-    if (currentMillis - previousMillis >= interval) 
-    {
-      Serial.println("Failed to connect.");
-      return false;
-    }
-  }
-
-  Serial.println(WiFi.localIP());
-  return true;
-}
 
 ////////////////////// Web Forms ////////////////////////////
 
@@ -497,6 +311,47 @@ String processor(const String& var)
 ////////////////////////////////  MQTT Stuff  /////////////////////////////////////
 
 
+void publishTemperature()
+{
+  float temperature = 0;
+  float humidity = 0;
+
+  char msg[MSG_BUFFER_SIZE];
+
+  unsigned long now = millis();
+  if (now - lastMsg > 2000) 
+  {
+    lastMsg = now;
+    ++counterValue;
+
+    // Temperature in Celsius
+    temperature = bme.readTemperature(); 
+
+    // Convert the value to a char array
+    char tempString[8];
+    dtostrf(temperature, 1, 2, tempString);
+    Serial.print("Temperature: ");
+    Serial.println(tempString);
+    //client.publish("esp32/temperature", tempString);
+
+    humidity = bme.readHumidity();
+    
+    // Convert the value to a char array
+    char humString[8];
+    dtostrf(humidity, 1, 2, humString);
+    Serial.print("Humidity: ");
+    Serial.println(humString);
+    //client.publish("esp32/humidity", humString);
+
+    snprintf (msg, MSG_BUFFER_SIZE, "hello world #%ld", counterValue);
+    Serial.print("Publish message: ");
+    Serial.println(msg);
+    client.publish("outTopic", msg);
+  }
+}
+
+
+
 void callback(char* topic, byte* payload, unsigned int length) {
   Serial.print("Message arrived [");
   Serial.print(topic);
@@ -517,6 +372,7 @@ void callback(char* topic, byte* payload, unsigned int length) {
 
 }
 
+// This is where we connect to the broker and subscribe (not sure why it is also publishing here a "hello world" publish) 
 void reconnect() {
   // Loop until we're reconnected
   //while (!client.connected()) {
@@ -530,7 +386,7 @@ void reconnect() {
       // Once connected, publish an announcement...
       client.publish("outTopic", "hello world");
       // ... and resubscribe
-      client.subscribe("inTopic");
+      client.subscribe("outTopic");// Changed from "inTopic" to see if we can subscribe to the same topic we publish to (testing both publish and subscribe on the same machine)
     } else {
       Serial.print("failed, rc=");
       Serial.print(client.state());
@@ -539,4 +395,186 @@ void reconnect() {
       delay(5000);
     }
  // }
+}
+
+
+//////////////////// WIFI Setup ////////////////////
+
+void connectWifi()
+{
+  // Load values saved in SPIFFS
+  ssid = readFile(SPIFFS, ssidPath);
+  pass = readFile(SPIFFS, passPath);
+  ip = readFile(SPIFFS, ipPath);
+  gateway = readFile (SPIFFS, gatewayPath);
+  Serial.println(ssid);
+  Serial.println(pass);
+  Serial.println(ip);
+  Serial.println(gateway);
+
+  if (initWiFi())
+  {
+    // wifi works fine, now serve web server:
+    serveLedChangerPage();
+  }
+  else
+  {
+    // wifi does not work, create a web page to ask for wifi login:
+    serveNetworkCredentialForm();
+  }
+    
+}
+
+// Initialize WiFi
+bool initWiFi() 
+{
+  if(ssid=="" || ip=="")
+  {
+    Serial.println("Undefined SSID or IP address.");
+    return false;
+  }
+
+  WiFi.mode(WIFI_STA);
+  localIP.fromString(ip.c_str());
+  localGateway.fromString(gateway.c_str());
+
+  if (!WiFi.config(localIP, localGateway, subnet))
+  {
+    Serial.println("STA Failed to configure");
+    return false;
+  }
+  
+  WiFi.begin(ssid.c_str(), pass.c_str());
+  Serial.println("Connecting to WiFi...");
+
+  unsigned long currentMillis = millis();
+  previousMillis = currentMillis;
+
+  while(WiFi.status() != WL_CONNECTED) 
+  {
+    currentMillis = millis();
+    if (currentMillis - previousMillis >= interval) 
+    {
+      Serial.println("Failed to connect.");
+      return false;
+    }
+  }
+
+  Serial.println(WiFi.localIP());
+  return true;
+}
+
+
+////////////////// SPIFFS File System ////////////////////////////
+
+// Initialize SPIFFS
+void initSPIFFS() 
+{
+  if (!SPIFFS.begin(true)) 
+  {
+    Serial.println("An error has occurred while mounting SPIFFS");
+  }
+  Serial.println("SPIFFS mounted successfully");
+}
+
+// Read File from SPIFFS
+String readFile(fs::FS &fs, const char * path)
+{
+  Serial.printf("Reading file: %s\r\n", path);
+
+  File file = fs.open(path);
+  if(!file || file.isDirectory())
+  {
+    Serial.println("- failed to open file for reading");
+    return String();
+  }
+  
+  String fileContent;
+  while(file.available())
+  {
+    fileContent = file.readStringUntil('\n');
+    break;     
+  }
+  return fileContent;
+}
+
+// Write file to SPIFFS
+void writeFile(fs::FS &fs, const char * path, const char * message)
+{
+  Serial.printf("Writing file: %s\r\n", path);
+
+  File file = fs.open(path, FILE_WRITE);
+  if(!file)
+  {
+    Serial.println("- failed to open file for writing");
+    return;
+  }
+  if(file.print(message))
+  {
+    Serial.println("- file written");
+  } 
+  else 
+  {
+    Serial.println("- write failed");
+  }
+}
+
+
+
+
+///////////// Hardware Setup ///////////////
+
+void setupScreen()
+{
+  // Turn on the screen
+  // On the Heltec ESP32 LoRa v2 the power for the display can be turned off.
+  pinMode(VEXT,OUTPUT);
+	digitalWrite(VEXT, LOW);
+  // and give a slight delay for it to initialize
+  delay(100);
+
+  // start communications with the screen
+  SCREENI2C.begin(SCREEN_I2C_SDA, SCREEN_I2C_SCL, 100000);
+  // SSD1306_SWITCHCAPVCC = generate display voltage from 3.3V internally
+  if (!display.begin(SSD1306_SWITCHCAPVCC, SCREEN_ADDRESS)) 
+  {
+    Serial.println(F("SSD1306 allocation failed"));
+    for (;;)
+      ;  // Don't proceed, loop forever
+  }
+
+  // Show initial display buffer contents on the screen --
+  // the library initializes this with an Adafruit splash screen.
+  display.clearDisplay();
+  display.display();
+  display.setTextSize(1);
+  display.setTextColor(WHITE);
+}
+
+void setupSensor()
+{
+  // setup hardware pins for use to communicate to the sensor
+  pinMode(SENSOR_I2C_SCL, OUTPUT);
+  digitalWrite(SENSOR_I2C_SCL, HIGH);
+  pinMode(SENSOR_I2C_SDA, OUTPUT);
+  digitalWrite(SENSOR_I2C_SDA, HIGH);
+
+  // initialize the sensor
+  Serial.println("Starting BME280...");
+  display.println("Starting BME280...");
+  display.display();
+  SENSORI2C.begin(SENSOR_I2C_SDA, SENSOR_I2C_SCL, 400000);
+  bool status = bme.begin(0x76, &SENSORI2C);  
+
+  // Check that we can communicate with the sensor.
+  // If we can't, output a message and go no further.
+  // This kind of error handling is important.
+  // Can you find a similar example elsewhere in the code?
+  if (!status) 
+  {
+    Serial.println("Could not find a valid BME280 sensor, check wiring!");
+    display.println("No BME- check wiring!");
+    display.display();
+    while (1); // same as "while (true)" - i.e. do nothing more, forever
+  }
 }
