@@ -7,12 +7,39 @@ This part of the project focuses on 3 main aspects
 1. Using an Heltech ESP32 LoRa Board as a platform for receiving data from sensors
 2. Connecting said platform to a network (and in the future a long distance LoRa WAN)
 3. Sending the collected data to a remote pub/sub system
+4. (Future) Battery saving mode - for field (battary) operated sensors
 
 A seperate subproject will be looking at receiveing the data from the pub/sub systesm and adding functionality such as data presentation, sensor and user registration, etc.
 
+### 1. Sensor Platform
+The most important part of this project is setting the arduino platform to connect to our sensors, read the data, and present it (on LCD screen or in serial monitor).
+We started with a temperature and humidity sensor (BME280). The goalsiss to continually add more sensors to this list.
+
+Current knowen supported sensors:
+#### Temperature
+BME280 (also a humidity sensor)
+
+#### Humidity
+BME280 (also a temperature sensor)
+
+### 2. Network Connectivity
+Our end goal is to use a LoRaWan and be able to send data over longer distances and in short bursts to conserve battery.
+For setup and utility, we added the ability to connect the ESP32 board to different Access Points (networks) without hard-coding network credentials (SSID and password). Your ESP will automatically join the last saved network or set up an Access Point that you can use to configure the network credentials.
+In order to store SSID information (and not hardcode it), we added the SPIFFS (File System).
+Since the LoRaWan and possibly other network connections might not be as reliable, we will have to store some of the sensor data on the platform for a short time, utilizing the file system as well.
+
+### 3. Sending Data to a Server
+In order to have more functionality than just viewing current sensor readings, we need to send the data somewhere.
+Some potential usage of the data:
+1.  Smart Home systems (Home Assistant) - turn fan on/off, warning messages, etc.
+2.  Present single sensor data over time/avarages/etc.
+3.  Present multiple sensor data over time/space
+
+For all of these usages we simply connect our platform to a pub/sub system, decoupling the source from the destination and keeping this open to the user.
+
 ## Based on
 This project, started as a workshop, was based on a few turorials and examples created by others:
-1.  Rui Santos - Complete project details at https://RandomNerdTutorials.com/esp32-esp8266-input-data-html-form/
+1.  Rui Santos - Complete roject details at https://RandomNerdTutorials.com/esp32-esp8266-input-data-html-form/
 2.  Rui Santos - Complete instructions at https://RandomNerdTutorials.com/esp32-wi-fi-manager-asyncwebserver/
 
 ## How To's (AKA getting it working)
