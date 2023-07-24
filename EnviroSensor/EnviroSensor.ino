@@ -89,8 +89,6 @@ TwoWire SENSORI2C = TwoWire(1); // second, seperate, I2C bus
 // create a global variable to hold our BME280 interface object
 Adafruit_BME280 bme;
 
-
-
 // From WifiManager
 // Create AsyncWebServer object on port 80
 AsyncWebServer server(80);
