@@ -12,8 +12,13 @@ This part of the project focuses on 3 main aspects
 A seperate subproject will be looking at receiveing the data from the pub/sub systesm and adding functionality such as data presentation, sensor and user registration, etc.
 
 ### 1. Sensor Platform
-The most important part of this project is setting the arduino platform to connect to our sensors, read the data, and present it (on LCD screen or in serial monitor).
-We started with a temperature and humidity sensor (BME280). The goalsiss to continually add more sensors to this list.
+The foundation of this project lies in configuring the Arduino platform to seamlessly connect with our sensors, read data, and present it either on an LCD screen or in the serial monitor. The key to making this platform a low barrier and user friendly solution is to enable addition and removal of sensors without having to hard code each one.
+This feature will be added in future iteration of the code.
+
+We prototyped it with a temperature and humidity sensor (BME280). The goal is to continually add more sensors to this list.
+
+Current supported boards:
+* Heltech ESP32 ESP-32S LoRa V 2.1 868MHz-915MHz 0.96 OLED Display WiFi Bluetooth Development Board Antenna Transceiver SX1276
 
 Current knowen supported sensors:
 #### Temperature
