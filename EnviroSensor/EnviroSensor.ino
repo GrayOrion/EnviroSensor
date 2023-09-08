@@ -21,7 +21,6 @@
 
 // Please note all the libraries needed
 // TODO: list library sources here for people to include
-// Bring in pre-created pieces code that does a bunch of work for us (libraries)
 #include <Wire.h> // i2c
 #include <Adafruit_GFX.h> // generic (abstract) drawing functions
 #include <Adafruit_SSD1306.h> // interface for our specific screen
@@ -82,8 +81,8 @@ TwoWire SCREENI2C = TwoWire(0);
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &SCREENI2C, SCREEN_RESET);
 
 // Constaants for the BME280 Sensor
-#define SENSOR_I2C_SDA 17
-#define SENSOR_I2C_SCL 22
+#define SENSOR_I2C_SDA 20
+#define SENSOR_I2C_SCL 36
 TwoWire SENSORI2C = TwoWire(1); // second, seperate, I2C bus
 
 // create a global variable to hold our BME280 interface object
