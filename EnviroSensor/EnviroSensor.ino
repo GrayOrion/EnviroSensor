@@ -25,6 +25,8 @@
 #include <Adafruit_GFX.h> // generic (abstract) drawing functions
 #include <Adafruit_SSD1306.h> // interface for our specific screen
 
+//#include "HT_SSD1306Wire.h" // LoRa v3
+
 #include <Adafruit_Sensor.h> // abstract functions for sensors
 #include <Adafruit_BME280.h> // specific code to access the BME280
 
@@ -70,10 +72,10 @@ int counterValue = 0; //TODO: ?!?! Fix this uglyness
 #define SCREEN_WIDTH 128  // OLED display width, in pixels
 #define SCREEN_HEIGHT 64  // OLED display height, in pixels
 
-#define SCREEN_I2C_SDA 4
-#define SCREEN_I2C_SCL 15
-#define SCREEN_RESET 16
-#define VEXT 21
+#define SCREEN_I2C_SDA 17
+#define SCREEN_I2C_SCL 18
+#define SCREEN_RESET 21 // 16 for V2
+#define VEXT 36 // 21 for v2
 #define SCREEN_ADDRESS 0x3C
 
 // create instances of i2c interface and SSD1306 objects
