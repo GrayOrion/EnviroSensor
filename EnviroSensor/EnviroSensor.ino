@@ -72,8 +72,8 @@ int counterValue = 0; //TODO: ?!?! Fix this uglyness
 #define SCREEN_WIDTH 128  // OLED display width, in pixels
 #define SCREEN_HEIGHT 64  // OLED display height, in pixels
 
-#define SCREEN_I2C_SDA 17
-#define SCREEN_I2C_SCL 18
+#define SCREEN_I2C_SDA 17 // 4 for V2
+#define SCREEN_I2C_SCL 18 // 15 for V2
 #define SCREEN_RESET 21 // 16 for V2
 #define VEXT 36 // 21 for v2
 #define SCREEN_ADDRESS 0x3C
@@ -83,8 +83,8 @@ TwoWire SCREENI2C = TwoWire(0);
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &SCREENI2C, SCREEN_RESET);
 
 // Constaants for the BME280 Sensor
-#define SENSOR_I2C_SDA 20
-#define SENSOR_I2C_SCL 36
+#define SENSOR_I2C_SDA 20 // 17 for V2
+#define SENSOR_I2C_SCL 36 // 22 for V2
 TwoWire SENSORI2C = TwoWire(1); // second, seperate, I2C bus
 
 // create a global variable to hold our BME280 interface object
