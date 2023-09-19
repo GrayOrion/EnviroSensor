@@ -21,10 +21,11 @@
 
 // Please note all the libraries needed
 // TODO: list library sources here for people to include
-// Bring in pre-created pieces code that does a bunch of work for us (libraries)
 #include <Wire.h> // i2c
 #include <Adafruit_GFX.h> // generic (abstract) drawing functions
 #include <Adafruit_SSD1306.h> // interface for our specific screen
+
+//#include "HT_SSD1306Wire.h" // LoRa v3
 
 #include <Adafruit_Sensor.h> // abstract functions for sensors
 #include <Adafruit_BME280.h> // specific code to access the BME280
@@ -71,19 +72,35 @@ int counterValue = 0; //TODO: ?!?! Fix this uglyness
 #define SCREEN_WIDTH 128  // OLED display width, in pixels
 #define SCREEN_HEIGHT 64  // OLED display height, in pixels
 
-#define SCREEN_I2C_SDA 4
-#define SCREEN_I2C_SCL 15
-#define SCREEN_RESET 16
-#define VEXT 21
+const char* LORA_CHIP_VERSION = "V3";
+
+#if LORA_CHIP_VERSION == V3
+  #define SCREEN_I2C_SDA 17 // 4 for V2
+  #define SCREEN_I2C_SCL 18 // 15 for V2
+  #define SCREEN_RESET 21 // 16 for V2
+  #define VEXT 36 // 21 for v2
+#else // V2
+  #define SCREEN_I2C_SDA 4
+  #define SCREEN_I2C_SCL 15
+  #define SCREEN_RESET 16
+  #define VEXT 21
+#endif
+
 #define SCREEN_ADDRESS 0x3C
 
 // create instances of i2c interface and SSD1306 objects
 TwoWire SCREENI2C = TwoWire(0);
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &SCREENI2C, SCREEN_RESET);
 
-// Constaants for the BME280 Sensor
-#define SENSOR_I2C_SDA 17
-#define SENSOR_I2C_SCL 22
+// Constaants for the BME280 Sensor 
+#if LORA_CHIP_VERSION == V3
+  #define SENSOR_I2C_SDA 20 // 17 for V2
+  #define SENSOR_I2C_SCL 36 // 22 for V2
+#else // V2
+  #define SENSOR_I2C_SDA 17
+  #define SENSOR_I2C_SCL 22
+#endif
+
 TwoWire SENSORI2C = TwoWire(1); // second, seperate, I2C bus
 
 // create a global variable to hold our BME280 interface object
